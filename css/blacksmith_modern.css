@@ -1,0 +1,220 @@
+#blacksmith-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 6000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.bs-window-modern {
+    width: 95%;
+    max-width: 420px; /* Сделали окно шире */
+    background: #1a1c20; /* Темно-металлический цвет */
+    background-image: radial-gradient(circle at bottom, rgba(211, 84, 0, 0.3) 0%, #1a1c20 70%);
+    border: 2px solid #7f8c8d; /* Железная окантовка */
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(230, 126, 34, 0.2);
+    overflow: hidden;
+    position: relative;
+}
+
+.bs-header-modern {
+    background: linear-gradient(180deg, #34495e, #2c3e50); /* Градиент стали */
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between; /* Крестик и заголовок на одной линии внутри */
+    align-items: center;
+    border-bottom: 2px solid #e67e22; /* Цвет огня кузни */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.bs-title-modern {
+    font-size: 22px;
+    font-weight: bold;
+    color: #ecf0f1;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(230, 126, 34, 0.6);
+    letter-spacing: 1px;
+}
+
+.btn-close-bs {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #7f8c8d;
+    color: #ecf0f1;
+    border-radius: 5px;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.2s;
+    margin: 0; /* Убираем любые левые отступы, которые могут сломать позицию */
+}
+.btn-close-bs:active { transform: scale(0.9); background: #e74c3c; border-color: #c0392b; }
+
+.bs-content-modern {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Сетка инвентаря для ковки */
+.bs-items-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 предметов в ряд, чтобы не было тесно */
+    gap: 8px;
+    max-height: 200px; /* Увеличили высоту сетки */
+    overflow-y: auto;
+    background: rgba(0,0,0,0.5);
+    padding: 10px;
+    border: 1px solid #5d4037;
+    border-radius: 8px;
+    box-shadow: inset 0 0 10px #000;
+}
+
+.bs-slot-modern {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #25282c;
+    border: 1px solid #4a5459;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    transition: 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.bs-slot-modern img { width: 80%; height: 80%; object-fit: contain; }
+.bs-slot-modern:hover { 
+    border-color: #f39c12; 
+    box-shadow: 0 0 8px #f39c12; 
+    transform: scale(1.05); 
+    z-index: 2; 
+    background: #34495e;
+}
+.bs-slot-upg-badge {
+    position: absolute; top: -4px; right: -4px;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white; font-size: 10px; font-weight: bold;
+    padding: 2px 4px; border-radius: 4px; border: 1px solid #145a32;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    z-index: 3;
+}
+
+/* Выбранный предмет на наковальне */
+.bs-selected-area-modern {
+    background: linear-gradient(145deg, #1e2124, #111315);
+    border: 1px solid #7f8c8d;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+
+.bs-anvil-glow {
+    position: absolute;
+    top: 25px; left: 50%;
+    transform: translateX(-50%);
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(230, 126, 34, 0.3) 0%, transparent 70%);
+    z-index: 0;
+    animation: pulse-forge 2s infinite alternate;
+}
+
+@keyframes pulse-forge {
+    0% { transform: translateX(-50%) scale(0.9); opacity: 0.5; }
+    100% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+}
+
+.bs-item-preview-modern {
+    width: 80px; height: 80px;
+    margin: 0 auto 15px auto;
+    border: 2px solid #e67e22;
+    border-radius: 8px;
+    background: #111;
+    display: flex; justify-content: center; align-items: center;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 15px rgba(230, 126, 34, 0.4);
+}
+.bs-item-preview-modern img { 
+    width: 85%; height: 85%; object-fit: contain; 
+    filter: drop-shadow(0 0 5px rgba(230, 126, 34, 0.8)); 
+}
+
+/* Статистика и инфо */
+.bs-stats-modern {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #bdc3c7;
+    margin-bottom: 15px;
+    text-align: left;
+    background: rgba(0,0,0,0.6);
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid #34495e;
+}
+
+.bs-cost-modern {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 15px;
+    background: linear-gradient(90deg, transparent, rgba(230, 126, 34, 0.15), transparent);
+    padding: 8px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.text-gold { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.5); font-size: 18px;}
+
+/* Кнопки заточки */
+.bs-actions-modern {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-upg-modern {
+    flex: 1;
+    padding: 10px 5px;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 2px #000;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.btn-upg-modern:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0); }
+
+.btn-upg-dmg { background: linear-gradient(180deg, #c0392b, #922b21); border: 1px solid #e74c3c; }
+.btn-upg-hp { background: linear-gradient(180deg, #27ae60, #1e8449); border: 1px solid #2ecc71; }
+.btn-upg-def { background: linear-gradient(180deg, #2980b9, #1f618d); border: 1px solid #3498db; }
+
+/* Анимация "Удар молота" при заточке */
+.hammer-strike {
+    animation: strike-anim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes strike-anim {
+    0% { filter: brightness(1); transform: scale(1); }
+    50% { filter: brightness(2.5) drop-shadow(0 0 20px #fff); transform: scale(1.3) rotate(-5deg); }
+    100% { filter: brightness(1); transform: scale(1); }
+}

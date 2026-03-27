@@ -1,0 +1,181 @@
+/* Подложка меню */
+#menu-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85); /* Темное размытие фона игры */
+    z-index: 6000;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Окно меню */
+.menu-box {
+    width: 95%; 
+    max-width: 440px; 
+    max-height: 90vh; /* Защита: меню не может быть выше 90% высоты экрана */
+    overflow-y: auto; /* Плавающая прокрутка, если экран очень маленький */
+    background: #1a1a1a url('../images/ui/menu_bg.png') center/cover no-repeat;
+    border: 2px solid #c0a062; /* Золотистая рамка */
+    border-radius: 15px;
+    padding: 25px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Отступы между блоками (Заголовок -> Сетка -> Линия) */
+    text-align: center;
+    box-shadow: 0 0 30px rgba(192, 160, 98, 0.3), inset 0 0 50px rgba(0,0,0,0.8);
+    position: relative;
+}
+
+/* Затемнение фона внутри меню */
+.menu-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5); 
+    border-radius: 13px;
+    z-index: 0;
+}
+
+.menu-title {
+    color: #ffdf00;
+    font-size: 26px;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-shadow: 0 2px 5px #000;
+    z-index: 1;
+    margin-bottom: 0px; /* Убрали лишний отступ под заголовком */
+    letter-spacing: 2px;
+}
+
+/* Сетка кнопок: ЖЕСТКО 2 колонки */
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* ПЕРВАЯ ЦИФРА - вертикальный отступ, ВТОРАЯ - горизонтальный */
+    gap: 2px 15px; 
+    z-index: 1;
+}
+
+/* Сама кнопка */
+.menu-img-btn {
+    background: transparent !important; 
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important; 
+    box-shadow: none !important; 
+    cursor: pointer;
+    width: 100%;  
+    aspect-ratio: 1180 / 1056; 
+    height: auto; 
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Картинка внутри кнопки */
+.menu-img-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; 
+    filter: drop-shadow(0 5px 8px rgba(0,0,0,0.8));
+    transition: filter 0.2s;
+}
+
+/* Эффект нажатия */
+.menu-img-btn:active {
+    transform: scale(0.92);
+}
+
+/* Подсветка при наведении */
+.menu-img-btn:hover img {
+    filter: drop-shadow(0 0 10px #c0a062);
+}
+
+/* === СКРЫТИЕ/ПОКАЗ КНОПОК МЕНЮ === */
+.menu-extra {
+    display: none !important; /* Скрыты по умолчанию */
+}
+
+.menu-extra.show {
+    display: flex !important; /* Показываем при развертывании */
+}
+
+/* Кнопка Развернуть/Свернуть */
+.btn-menu-toggle {
+    grid-column: span 2; /* На всю ширину сетки (2 колонки) */
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #c0a062;
+    color: #c0a062;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 5px;
+    transition: transform 0.2s, background 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+}
+
+.btn-menu-toggle:active {
+    transform: scale(0.95);
+    background: rgba(192, 160, 98, 0.2);
+}
+
+/* Крупный бейджик для сообщений */
+#menu-pm-badge {
+    position: absolute; 
+    top: 0px; 
+    right: 5px; 
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    width: 28px; 
+    height: 28px; 
+    font-size: 14px; 
+    font-weight: bold;
+    color: white;
+    background: #e53935;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.8);
+    z-index: 2;
+}
+
+/* Разделитель */
+.menu-divider {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #c0a062, transparent);
+    margin: 5px 0;
+    z-index: 1;
+}
+
+/* Нижние кнопки (Выход и Закрыть) */
+.menu-footer-btns {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px 15px; /* Тоже сузили вертикальный отступ */
+    z-index: 1;
+}
+
+/* Запасной текст, если картинка не загрузилась */
+.menu-fallback-text {
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: #444;
+    color: white;
+    border: 1px solid #777;
+    border-radius: 5px;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+}

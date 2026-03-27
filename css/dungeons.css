@@ -1,0 +1,23 @@
+/* css/dungeons.css v6 */
+
+/* Стили спрайта теперь в game_ui.css (width: 4%) */
+
+.dungeon-sprite:hover { filter: drop-shadow(0 0 3px red) brightness(1.2); z-index: 15; }
+
+/* Окно Данжа */
+#dungeon-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5500; justify-content: center; align-items: center; }
+.dungeon-window { width: 320px; background: #1a1a1a; border: 2px solid #d32f2f; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; align-items: center; color: white; }
+.boss-title { font-size: 20px; font-weight: bold; color: #ef5350; margin-bottom: 10px; text-transform: uppercase; }
+.boss-preview { width: 100px; height: 100px; border: 1px solid #555; background: #000; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; }
+.boss-preview img { width: 100%; height: 100%; object-fit: contain; }
+.boss-hp-container { width: 100%; height: 18px; background: #333; border: 1px solid #555; border-radius: 3px; margin-bottom: 15px; position: relative; }
+.boss-hp-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #c62828, #e53935); }
+.boss-hp-text { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 1px #000; }
+.btn-fight { background: #d32f2f; color: white; font-size: 16px; font-weight: bold; padding: 10px; width: 100%; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
+.btn-fight:disabled { background: #444; color: #888; }
+.drop-list-title { width: 100%; font-size: 11px; color: #aaa; margin-bottom: 5px; }
+.drop-list { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; width: 100%; }
+.drop-item { width: 40px; text-align: center; }
+.drop-img { width: 40px; height: 40px; border: 1px solid #555; background: #222; }
+.drop-img img { width: 100%; height: 100%; object-fit: contain; }
+.drop-chance { font-size: 9px; color: orange; }

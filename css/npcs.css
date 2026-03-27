@@ -1,0 +1,25 @@
+/* css/npcs.css v5 */
+
+/* Стили самого спрайта теперь в game_ui.css (width: 4%) */
+/* Оставляем только специфичные настройки, если нужны */
+
+.npc-sprite:hover {
+    filter: drop-shadow(0 0 5px white);
+}
+
+/* Окно диалога НПС */
+#npc-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5000; justify-content: center; align-items: center; }
+.npc-window { width: 350px; background: #1e1e1e; border: 2px solid #a0a0a0; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; color: white; }
+.npc-header { display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 15px; }
+.npc-portrait { width: 60px; height: 60px; border: 2px solid #555; background: #000; object-fit: cover; }
+.npc-name { font-size: 20px; font-weight: bold; color: gold; }
+.npc-desc { font-size: 12px; color: #aaa; font-style: italic; }
+.npc-quest-list { display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto; }
+.npc-quest-item { background: #333; padding: 10px; border-radius: 5px; border: 1px solid #444; }
+.npc-quest-title { font-weight: bold; color: #fff; margin-bottom: 5px; }
+.npc-quest-desc { font-size: 12px; color: #ccc; margin-bottom: 8px; }
+.npc-quest-rewards { font-size: 11px; color: gold; margin-bottom: 8px; }
+
+.btn-accept-quest { background: #4CAF50; border: none; color: white; padding: 8px; width: 100%; cursor: pointer; border-radius: 3px; }
+.btn-turnin-quest { background: #FF9800; border: none; color: black; font-weight: bold; padding: 8px; width: 100%; cursor: pointer; border-radius: 3px; }
+.btn-quest-taken { background: #555; border: none; color: #aaa; padding: 8px; width: 100%; cursor: not-allowed; border-radius: 3px; }

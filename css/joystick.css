@@ -1,0 +1,47 @@
+#joystick-container {
+    display: none; 
+}
+
+/* Стрелки (D-PAD) */
+.d-pad {
+    position: absolute;
+    /* Подняли выше: было 20px, стало 70px. 
+       Это спасет от перекрытия виртуальными кнопками Android/iPhone */
+    bottom: 70px; 
+    left: 20px;
+    
+    width: 140px;
+    height: 140px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    z-index: 1500; /* Поверх карты, но ниже чата */
+    
+    background: rgba(0,0,0,0.2); 
+    border-radius: 50%;
+    padding: 5px;
+}
+
+.d-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation; 
+}
+
+.d-btn:active {
+    background: rgba(76, 175, 80, 0.5); /* Зеленая подсветка */
+}
+
+/* Расположение */
+.d-up    { grid-column: 2; grid-row: 1; }
+.d-left  { grid-column: 1; grid-row: 2; }
+.d-right { grid-column: 3; grid-row: 2; }
+.d-down  { grid-column: 2; grid-row: 3; }

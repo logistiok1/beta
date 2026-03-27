@@ -1,0 +1,61 @@
+/* css/wings.css */
+
+/* Ячейка для крыльев под персонажем */
+.equip-slot.wings-slot-ui {
+    margin-top: 15px; /* Отступ от аватара вниз */
+    width: 55px;
+    height: 55px;
+    border-radius: 10px;
+    border: 2px dashed #00BCD4; /* Красивая голубая пунктирная рамка */
+    background: rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 10px rgba(0, 188, 212, 0.3), inset 0 0 10px #000;
+    transition: 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.equip-slot.wings-slot-ui:hover {
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(0, 188, 212, 0.8);
+    transform: scale(1.05);
+}
+
+.equip-slot.wings-slot-ui img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
+}
+
+/* Рамка персонажа должна выпускать крылья наружу */
+.profile-avatar-frame {
+    position: relative;
+    z-index: 5;
+}
+
+/* Изображение самого персонажа */
+#prof-img {
+    position: relative;
+    z-index: 2; /* Должен быть выше крыльев */
+}
+
+/* Крылья позади персонажа */
+#prof-wings-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180%; /* Крылья выходят за пределы персонажа в ширину */
+    height: 180%; /* Крылья выходят за пределы в высоту */
+    object-fit: contain;
+    z-index: -1; /* Отрисовывается ПОЗАДИ персонажа */
+    pointer-events: none; /* Чтобы не мешали кликать по персонажу */
+    animation: wings-hover 3s infinite ease-in-out;
+}
+
+@keyframes wings-hover {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+    50% { transform: translate(-50%, -50%) translateY(-5px); }
+}

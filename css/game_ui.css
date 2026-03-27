@@ -1,0 +1,206 @@
+/* css/game_ui.css v131 (Scrollable HUD Menu) */
+
+#game-screen { 
+    width: 100vw; 
+    height: 100vh; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    overflow: hidden; 
+    background: #000; 
+}
+
+@keyframes damage-flash { 0% { box-shadow: inset 0 0 0 0 red; } 50% { box-shadow: inset 0 0 50px 20px rgba(255, 0, 0, 0.8); } 100% { box-shadow: inset 0 0 0 0 red; } }
+.damaged { animation: damage-flash 0.3s ease-in-out; }
+
+/* === КАРТА === */
+#world-map { 
+    width: 500vw; 
+    height: 500vw; /* Строгий квадрат для сетки (решает проблему скольжения) */
+    background-image: url('../images/loc_spawn.jpg'); 
+    background-size: 100% 100%; /* Идеальное заполнение без искажений */
+    background-position: center; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    z-index: 1; 
+    transition: transform 0.2s linear; 
+    will-change: transform;
+}
+
+#world-map::after { 
+    content: ''; 
+    position: absolute; 
+    width: 100%; 
+    height: 100%; 
+    background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px); 
+    background-size: 2% 2%; 
+    pointer-events: none; 
+}
+
+/* === ИГРОК === */
+#player-char {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+    z-index: 10; width: 20vw !important; height: 20vw !important; 
+    background-size: contain !important; background-repeat: no-repeat;
+    background-position: center bottom !important; 
+    filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+    pointer-events: auto; cursor: pointer;
+}
+
+/* === ОСТАЛЬНЫЕ ОБЪЕКТЫ === */
+.other-player, .mob-sprite, .npc-sprite, .dungeon-sprite, .resource-sprite, .teleport-sprite {
+    width: 4% !important; height: 4% !important; position: absolute; transform: translate(-25%, -50%); 
+    background-size: contain !important; background-repeat: no-repeat; background-position: center bottom !important; 
+}
+
+.other-player { z-index: 18; cursor: pointer; transition: top 0.2s linear, left 0.2s linear; pointer-events: auto; }
+.mob-sprite { z-index: 15; pointer-events: auto;}
+.resource-sprite { z-index: 14; cursor: pointer; pointer-events: auto;}
+.teleport-sprite { z-index: 10; animation: portal-pulse 2s infinite ease-in-out; }
+.npc-sprite { z-index: 16; cursor: pointer; pointer-events: auto;}
+.dungeon-sprite { z-index: 12; cursor: pointer; pointer-events: auto;}
+
+/* ========================================= */
+/* === НАСТРОЙКА ВЫСОТЫ ИМЕН (НИКОВ) === */
+/* ========================================= */
+.name-tag { position: absolute; left: 50%; transform: translate(-50%, -100%); width: auto; font-size: 14px; font-weight: bold; white-space: nowrap; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; pointer-events: none; z-index: 25; text-align: center; }
+.tag-red { color: #ff5252; }
+.tag-white { color: #ffffff; }
+
+.player-name-tag { top: -15px !important; }
+.npc-name-tag { top: -15px !important; }
+.mob-sprite .name-tag { top: -15px !important; }
+.boss-name-tag { top: -30px !important; }
+.dungeon-name-tag { top: -20px !important; font-size: 14px; color: #ff5252; }
+/* ========================================= */
+
+.quest-marker { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -100%); font-size: 32px; font-weight: bold; text-shadow: 0 0 3px #000; animation: bounce 1s infinite; }
+.marker-yellow { color: #FFD700; } 
+.marker-green { color: #00FF00; } 
+
+@keyframes bounce { 0%, 100% { transform: translate(-50%, -100%); } 50% { transform: translate(-50%, calc(-100% - 10px)); } }
+@keyframes portal-pulse { 0% { transform: translate(-25%, -50%) scale(0.9); filter: brightness(0.8); } 50% { transform: translate(-25%, -50%) scale(1.1); filter: brightness(1.2); } 100% { transform: translate(-25%, -50%) scale(0.9); filter: brightness(0.8); } }
+
+/* === UI ИНТЕРФЕЙС ЛЕВЫЙ ВЕРХНИЙ УГОЛ (МЕНЮ И ЧАТ) === */
+.ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+
+.ui-top-left { 
+    pointer-events: auto; 
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0px !important; 
+}
+
+.menu-btn, .chat-btn { 
+    width: 60px !important; 
+    height: 60px !important; 
+    background: transparent !important; 
+    border: none !important; 
+    box-shadow: none !important; 
+    padding: 0 !important; 
+    margin: 0 !important; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    cursor: pointer; 
+    transition: transform 0.2s; 
+    position: relative; 
+}
+.menu-btn:active, .chat-btn:active { transform: scale(0.9); }
+
+.menu-btn img, .chat-btn img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    filter: none !important; 
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* ========================================= */
+/* === ПОЛНОСТЬЮ ПРОЗРАЧНЫЙ HUD С ВЕРТИКАЛЬНЫМ ВЫПАДЕНИЕМ === */
+/* ========================================= */
+.hud-container { 
+    position: absolute; top: 10px; right: 10px; display: flex; align-items: flex-start; gap: 15px; pointer-events: auto; transform-origin: top right; transform: scale(0.95); background: transparent; border: none; padding: 0; 
+}
+.hud-bars { display: flex; flex-direction: column; align-items: flex-end; width: 170px; margin-top: 5px; }
+.bar-wrap { width: 170px; height: 14px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 7px; margin-bottom: 8px; position: relative; overflow: hidden; box-shadow: inset 0 0 5px #000; }
+.hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #d32f2f, #f44336); transition: width 0.3s; }
+.xp-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #ff9800, #ffc107); transition: width 0.3s; }
+.hud-text { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; color: white; text-shadow: 1px 1px 2px #000; margin: 0; }
+.hud-bottom-actions { display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-top: 6px; }
+
+.hud-avatar-wrapper { display: flex; flex-direction: column; align-items: center; }
+
+/* --- ИСПРАВЛЕНИЕ СКРОЛЛА МЕНЮ --- */
+.hud-buttons-collapse { 
+    display: flex; flex-direction: column; 
+    overflow: hidden; max-height: 0; opacity: 0; 
+    transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out; 
+}
+.hud-buttons-collapse.show { 
+    max-height: 60vh; /* Меню не будет вылезать за пределы экрана */
+    opacity: 1; 
+    overflow-y: auto; /* Появляется скролл пальцем */
+    pointer-events: auto;
+    padding-bottom: 10px;
+}
+/* Убираем визуальную серую полоску скролла, чтобы меню было красивым */
+.hud-buttons-collapse::-webkit-scrollbar { display: none; }
+.hud-buttons-collapse { -ms-overflow-style: none; scrollbar-width: none; }
+/* -------------------------------- */
+
+.hud-toggle-btn { width: 26px; height: 26px; margin-top: 5px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,215,0,0.6); border-radius: 5px; color: gold; font-size: 12px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 5px rgba(0,0,0,0.8); transition: background 0.2s; }
+.hud-toggle-btn:active { background: rgba(255,215,0,0.3); }
+
+.hud-buttons-row { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; padding-top: 10px; }
+.daily-btn, .notification-btn { width: 52px !important; height: 52px !important; background: transparent; border: none; padding: 0; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.2s; position: relative; }
+.daily-btn:hover, .notification-btn:hover { filter: none !important; }
+.daily-btn:active, .notification-btn:active { transform: scale(0.9); }
+.hud-btn-img { width: 100% !important; height: 100% !important; object-fit: contain !important; filter: none !important; box-shadow: none !important; }
+
+.notif-badge { position: absolute; top: 0px; right: 0px; width: 14px; height: 14px; background: red; border-radius: 50%; display: none; border: 2px solid white; box-shadow: 0 0 5px #000; }
+.notif-badge.active { display: block; }
+
+.hud-gold { display: flex; align-items: center; gap: 6px; color: gold; font-size: 15px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+.hud-gold img { width: 18px; height: 18px; object-fit: contain; filter: drop-shadow(0 0 2px #000); }
+
+.hud-avatar-block { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; }
+.hud-avatar-block:active { transform: scale(0.95); }
+.hud-avatar-img { width: 60px; height: 60px; border: 2px solid rgba(255,215,0,0.8); border-radius: 50%; background: #222; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+.hud-avatar-img img { width: 100%; height: 100%; object-fit: cover; }
+.hud-level-badge { margin-top: -10px; background: linear-gradient(180deg, #4CAF50, #2E7D32); color: white; font-size: 12px; font-weight: bold; padding: 3px 10px; border-radius: 10px; border: 1px solid #fff; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.7); }
+
+/* ========================================= */
+/* === ЧАТ И БОЙ === */
+/* ========================================= */
+#chat-window { pointer-events: auto; display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; height: 300px; background: #222; border: 2px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.9); flex-direction: column; z-index: 9999; }
+#chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; font-size: 14px; color: #eee; border-bottom: 1px solid #444; }
+#chat-input-area { display: flex; padding: 8px; background: #333; }
+#chat-input-area input { width: 100%; background: transparent; border: none; color: white; padding: 8px; font-size: 16px; outline: none; }
+.chat-close-btn { background: #d32f2f; color: white; border: none; padding: 10px; cursor: pointer; text-transform: uppercase; font-weight: bold; border-radius: 0 0 8px 8px; }
+
+#combat-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 6000; justify-content: center; align-items: center; flex-direction: column; }
+.combat-header { display: flex; justify-content: space-between; align-items: center; width: 300px; margin-bottom: 20px; }
+.combat-char { display: flex; flex-direction: column; align-items: center; width: 80px; color: white; }
+.combat-char img { width: 80px; height: 80px; border: 2px solid #555; border-radius: 8px; background: #222; object-fit: contain; }
+.combat-char.hit img { animation: shake-red 0.3s; border-color: red; }
+.combat-vs { font-weight: bold; color: #ff5252; font-size: 24px; text-shadow: 0 0 10px red; }
+.mob-hp-container { width: 100%; height: 8px; background: #333; border: 1px solid #777; margin-top: 5px; border-radius: 2px; }
+.mob-hp-bar-wrap { width: 100%; height: 100%; }
+.mob-hp-fill { width: 100%; height: 100%; background: #d32f2f; transition: width 0.2s; }
+.combat-btn-area { margin-bottom: 20px; }
+.btn-attack { background: #d32f2f; color: white; border: 2px solid #ff5252; padding: 15px 40px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 0 15px #b71c1c; }
+.btn-attack:active { transform: scale(0.95); }
+.combat-log { width: 300px; height: 120px; background: rgba(0,0,0,0.6); border: 1px solid #444; padding: 10px; font-size: 13px; color: #ccc; text-align: center; border-radius: 5px; overflow-y: auto; }
+
+#victory-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 6100; justify-content: center; align-items: center; flex-direction: column; }
+.victory-title { font-size: 30px; color: gold; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px orange; }
+.victory-loot { color: white; text-align: center; margin-bottom: 20px; font-size: 16px; line-height: 1.5; }
+.btn-close-victory { background: #4CAF50; color: white; font-size: 18px; padding: 10px 30px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+#btn-enter-portal { display: none; position: fixed; bottom: 250px; right: 30px; width: 60px; height: 60px; background: radial-gradient(circle, #ab47bc, #4a148c); border: 2px solid #e1bee7; border-radius: 50%; z-index: 200; justify-content: center; align-items: center; box-shadow: 0 0 15px #9c27b0; cursor: pointer; }

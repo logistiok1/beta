@@ -1,0 +1,95 @@
+/* Окно Кузницы */
+#blacksmith-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 5100;
+    justify-content: center;
+    align-items: center;
+}
+
+.bs-window {
+    width: 340px;
+    background: #1a1a1a;
+    border: 2px solid #ff5722; /* Оранжевый, как огонь */
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    color: white;
+    box-shadow: 0 0 20px rgba(255, 87, 34, 0.3);
+}
+
+.bs-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: #ff5722;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    text-shadow: 0 0 5px #000;
+}
+
+/* Сетка предметов для заточки */
+.bs-items-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+    background: #222;
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+/* Область выбранного предмета */
+.bs-selected-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-top: 1px solid #444;
+    padding-top: 15px;
+}
+
+.bs-item-preview {
+    width: 60px; height: 60px;
+    border: 1px solid #777;
+    background: #000;
+    margin-bottom: 10px;
+    position: relative;
+}
+.bs-item-preview img { width: 100%; height: 100%; object-fit: contain; }
+
+.bs-info-text { font-size: 14px; text-align: center; margin-bottom: 5px; }
+.bs-cost { color: gold; font-weight: bold; margin-bottom: 10px; }
+
+/* Кнопки заточки */
+.bs-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn-upgrade {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    font-size: 12px;
+    transition: 0.2s;
+    position: relative;
+}
+.btn-upgrade:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-up-dmg { background: #d32f2f; border: 1px solid #ff5252; } /* Красный */
+.btn-up-hp { background: #388E3C; border: 1px solid #4CAF50; } /* Зеленый */
+.btn-up-def { background: #1976D2; border: 1px solid #2196F3; } /* Синий */
+
+.btn-upgrade:active { transform: scale(0.95); }

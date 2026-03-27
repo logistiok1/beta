@@ -1,0 +1,193 @@
+/* css/main.css v46 */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    user-select: none;
+    -webkit-user-select: none; 
+    -webkit-tap-highlight-color: transparent; 
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    color: white;
+    overflow: hidden; 
+}
+
+/* ЭКРАНЫ */
+.screen {
+    display: none; 
+    width: 100%;
+    height: 100%;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #111; 
+    z-index: 10;
+}
+
+.screen.active {
+    display: flex; 
+}
+
+/* Общие кнопки */
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    margin: 10px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    transition: 0.2s;
+}
+
+button:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+}
+
+/* Инпуты для форм */
+input[type="text"], input[type="password"] {
+    padding: 12px;
+    font-size: 16px;
+    margin: 10px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background: #222;
+    color: white;
+    text-align: center;
+    outline: none;
+    width: 200px;
+    max-width: 80vw; 
+}
+
+input[type="text"]:focus, input[type="password"]:focus {
+    border-color: #4CAF50;
+}
+
+/* === ФОН ДЛЯ ЭКРАНОВ АВТОРИЗАЦИИ === */
+.auth-bg {
+    background-color: #111; 
+    background-image: url('../images/main_bg.jpg') !important; 
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+}
+
+.auth-bg::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.65); 
+    z-index: 0;
+    pointer-events: none;
+}
+
+.auth-bg > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* === СТИЛИ ЛОГОТИПА === */
+.main-logo {
+    width: 90%;
+    max-width: 350px; 
+    height: auto;
+    margin-bottom: 30px; 
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4)); 
+    -webkit-user-drag: none;
+}
+
+/* === НОВЫЕ СТИЛИ ДЛЯ КНОПОК-КАРТИНОК === */
+.img-btn-wrap {
+    width: 220px;
+    height: 80px; 
+    max-width: 65vw; 
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 5px 0; 
+    cursor: pointer;
+    transition: transform 0.2s, filter 0.2s;
+    filter: drop-shadow(0 0 5px rgba(0,0,0,0.8));
+    border-radius: 12px; 
+}
+
+.img-btn-wrap:active { transform: scale(0.95); }
+.img-btn-wrap:hover { filter: drop-shadow(0 0 10px gold) brightness(1.1); }
+
+.img-button {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; 
+    object-position: center; 
+    pointer-events: none; 
+    -webkit-user-drag: none;
+    margin: 0; 
+    filter: none; 
+}
+
+/* === ОКНО ПРИВЕТСТВИЯ НОВИЧКА (ПЬЕР) === */
+#welcome-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 9000;
+    justify-content: center;
+    align-items: center;
+}
+.welcome-window {
+    width: 320px;
+    background: #1a1a1a;
+    border: 2px solid #03A9F4;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    box-shadow: 0 0 20px rgba(3, 169, 244, 0.3);
+}
+.welcome-npc-img {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    margin-bottom: 10px;
+    object-fit: cover;
+    background: #000;
+}
+.welcome-npc-name {
+    color: gold;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+.welcome-text {
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: center;
+    min-height: 100px; /* Чтобы окно не прыгало, когда текст печатается */
+    margin-bottom: 15px;
+    color: #eee;
+}
+
+/* Для телефонов */
+@media (max-width: 480px) {
+    .main-logo { max-width: 280px; margin-bottom: 20px; }
+    .img-btn-wrap { margin: 3px 0; }
+}

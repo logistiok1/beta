@@ -1,0 +1,106 @@
+/* === css/promotions.css === */
+#promo-overlay {
+    display: none; 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); z-index: 9500; 
+    justify-content: center; align-items: center;
+}
+
+/* Окно теперь с фоновой картинкой! */
+.promo-window {
+    width: 330px; 
+    background-color: #111; /* Запасной цвет */
+    border: 2px solid gold; border-radius: 12px;
+    box-shadow: 0 0 40px rgba(255,215,0,0.4), inset 0 0 30px rgba(0,0,0,0.9);
+    display: flex; flex-direction: column; overflow: hidden; position: relative;
+    animation: promoPopup 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background-size: cover; 
+    background-position: center;
+}
+
+@keyframes promoPopup {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Затемнение, чтобы текст и предметы читались поверх любой картинки */
+.promo-overlay-bg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(17,17,17,0.85) 45%, rgba(17,17,17,1) 100%);
+    z-index: 1;
+}
+
+/* Контент поверх затемнения */
+.promo-content {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; width: 100%; height: 100%;
+}
+
+.promo-header-bg {
+    width: 100%; height: 110px; 
+    display: flex; justify-content: center; align-items: flex-end; padding-bottom: 10px;
+}
+
+.promo-title {
+    font-size: 26px; font-weight: bold; color: white;
+    text-transform: uppercase; text-shadow: 0 0 10px #000, 2px 2px 4px #000, 0 0 20px gold;
+    text-align: center; padding: 0 10px; line-height: 1.2;
+}
+
+/* Аккуратный крестик сверху справа */
+.promo-close-btn {
+    position: absolute; top: 10px; right: 10px; width: 32px; height: 32px;
+    background: rgba(0,0,0,0.6); border: 2px solid gold; border-radius: 50%;
+    color: white; font-weight: bold; font-size: 14px; cursor: pointer;
+    z-index: 5; display: flex; justify-content: center; align-items: center;
+    transition: 0.2s; box-shadow: 0 0 10px #000;
+}
+.promo-close-btn:active { transform: scale(0.9); background: #d32f2f; border-color: white; }
+
+.promo-body { padding: 10px 20px 20px 20px; display: flex; flex-direction: column; align-items: center; }
+
+/* Красивые ячейки под предметы */
+.promo-items-container { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; width: 100%; }
+
+.promo-item-slot {
+    width: 65px; height: 65px; background: #222; border: 2px solid #555;
+    border-radius: 8px; display: flex; justify-content: center; align-items: center;
+    position: relative; cursor: pointer; transition: 0.2s; box-shadow: inset 0 0 15px #000;
+}
+.promo-item-slot:hover { border-color: white; transform: scale(1.05); }
+.promo-item-slot img { width: 85%; height: 85%; object-fit: contain; filter: drop-shadow(0 0 3px rgba(255,255,255,0.2)); }
+
+.promo-item-qty {
+    position: absolute; bottom: -8px; right: -8px; background: #d32f2f; color: white;
+    font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 6px;
+    border: 1px solid #fff; box-shadow: 0 0 5px #000; z-index: 5;
+}
+
+/* Блок с ценами */
+.promo-price-section {
+    display: flex; align-items: center; gap: 15px; margin-bottom: 20px;
+    background: rgba(255,215,0,0.1); padding: 10px 20px; border-radius: 10px;
+    border: 1px dashed gold; box-shadow: inset 0 0 10px #000;
+}
+
+.promo-old-price {
+    font-size: 16px; color: #888; text-decoration: line-through; font-weight: bold;
+    display: flex; align-items: center; gap: 4px; text-shadow: 1px 1px 1px #000;
+}
+
+.promo-new-price {
+    font-size: 24px; color: #4CAF50; font-weight: bold; display: flex; align-items: center; gap: 5px;
+    text-shadow: 0 0 10px rgba(76,175,80,0.6), 1px 1px 2px #000;
+}
+
+.promo-coin-img { width: 22px; height: 22px; object-fit: contain; filter: drop-shadow(0 0 2px #000); }
+
+/* Кнопка купить */
+.promo-buy-btn {
+    width: 100%; padding: 15px; background: linear-gradient(180deg, #FFB300, #F57C00);
+    border: 2px solid #fff; border-radius: 8px; color: white; font-size: 18px;
+    font-weight: bold; text-transform: uppercase; cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255,152,0,0.4); transition: 0.2s;
+    text-shadow: 1px 1px 2px #000;
+}
+.promo-buy-btn:active { transform: translateY(3px); box-shadow: 0 2px 5px rgba(255,152,0,0.4); }
