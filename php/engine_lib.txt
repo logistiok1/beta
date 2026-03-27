@@ -1,0 +1,462 @@
+﻿<?php
+// php/engine_lib.php
+
+// АВТО-СОЗДАНИЕ ТАБЛИЦ (Защита для хранилища и слота крыльев)
+try {
+ $pdo->exec("CREATE TABLE IF NOT EXISTS `storage` (
+     `id` INT AUTO_INCREMENT PRIMARY KEY,
+     `user_id` INT NOT NULL,
+     `item_id` INT NOT NULL,
+     `quantity` INT DEFAULT 1,
+     `expires_at` INT NOT NULL
+ )");
+ 
+ // Гарантируем, что слот крыльев существует в БД
+ $pdo->exec("ALTER TABLE `equipment` ADD COLUMN IF NOT EXISTS `slot_wings` INT DEFAULT 0");
+} catch(Exception $e) {}
+
+// === ФУНКЦИЯ ПЕРЕРАСЧЕТА ХАРАКТЕРИСТИК (РЕШАЕТ ПРОБЛЕМУ СТАТов И ЗАТОЧЕК) ===
+function recalcStats($pdo, $userId) {
+ $stmt = $pdo->prepare("SELECT level FROM users WHERE id = ?");
+ $stmt->execute([$userId]);
+ $lvl = (int)$stmt->fetchColumn();
+ if (!$lvl) return;
+
+ // 1. Базовые параметры от уровня (1 уровень = 100 ХП, 5 Урона, 0 Брони)
+ $baseDmg = 4 + $lvl;
+ $baseHp = 90 + ($lvl * 10);
+ $baseDef = 0;
+
+ // 2. Добавляем характеристики надетого питомца
+ $pStmt = $pdo->prepare("SELECT p.base_dmg, p.base_hp, p.base_def, up.level FROM user_pets up JOIN pets p ON up.pet_id = p.id WHERE up.user_id = ? AND up.is_summoned = 1");
+ $pStmt->execute([$userId]);
+ $pet = $pStmt->fetch(PDO::FETCH_ASSOC);
+ if ($pet) {
+     $baseDmg += $pet['base_dmg'] * $pet['level'];
+     $baseHp += $pet['base_hp'] * $pet['level'];
+     $baseDef += $pet['base_def'] * $pet['level'];
+ }
+
+ // 3. Добавляем характеристики ВСЕХ надетых вещей (базовые + заточки!)
+ // Включая КРЫЛЬЯ, так как у них тоже будет is_equipped = 1
+ $eqStmt = $pdo->prepare("
+     SELECT SUM(i.damage + inv.bonus_dmg) as t_dmg, 
+            SUM(i.hp_bonus + inv.bonus_hp) as t_hp, 
+            SUM(i.defense + inv.bonus_def) as t_def 
+     FROM inventory inv 
+     JOIN items i ON inv.item_id = i.id 
+     WHERE inv.user_id = ? AND inv.is_equipped = 1
+ ");
+ $eqStmt->execute([$userId]);
+ $eq = $eqStmt->fetch(PDO::FETCH_ASSOC);
+
+ if ($eq) {
+     $baseDmg += (int)$eq['t_dmg'];
+     $baseHp += (int)$eq['t_hp'];
+     $baseDef += (int)$eq['t_def'];
+ }
+
+ // 4. Обновляем пользователя
+ $pdo->prepare("UPDATE users SET damage = GREATEST(1, ?), max_hp = GREATEST(10, ?), defense = GREATEST(0, ?) WHERE id = ?")
+     ->execute([$baseDmg, $baseHp, $baseDef, $userId]);
+     
+ // 5. Если текущее ХП больше нового максимума (например, сняли вещь на +ХП), срезаем излишек
+ $pdo->prepare("UPDATE users SET hp = max_hp WHERE hp > max_hp AND id = ?")->execute([$userId]);
+}
+
+// === ФУНКЦИЯ ПРОГРЕССА ДОСТИЖЕНИЙ ===
+function progressAchievement($pdo, $userId, $type, $targetId, $amountToAdd) {
+ $stmt = $pdo->prepare("SELECT * FROM achievements WHERE cond_type = ? AND (cond_target_id = 0 OR cond_target_id = ?)");
+ $stmt->execute([$type, $targetId]);
+ $achs = $stmt->fetchAll();
+
+ foreach ($achs as $ach) {
+     $uStmt = $pdo->prepare("SELECT progress, is_completed FROM user_achievements WHERE user_id = ? AND achievement_id = ?");
+     $uStmt->execute([$userId, $ach['id']]);
+     $uAch = $uStmt->fetch();
+
+     if ($uAch && $uAch['is_completed']) continue; 
+
+     $current = $uAch ? $uAch['progress'] : 0;
+     $newProgress = $current + $amountToAdd;
+     $isCompleted = ($newProgress >= $ach['cond_value']) ? 1 : 0;
+     
+     if ($newProgress > $ach['cond_value']) $newProgress = $ach['cond_value'];
+
+     if ($uAch) {
+         $pdo->prepare("UPDATE user_achievements SET progress = ?, is_completed = ? WHERE user_id = ? AND achievement_id = ?")->execute([$newProgress, $isCompleted, $userId, $ach['id']]);
+     } else {
+         $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_id, progress, is_completed) VALUES (?, ?, ?, ?)")->execute([$userId, $ach['id'], $newProgress, $isCompleted]);
+     }
+
+     if ($isCompleted && (!$uAch || !$uAch['is_completed'])) {
+         $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$userId, "🏆 Достижение разблокировано: " . $ach['title']]);
+     }
+ }
+}
+
+// === УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ВЫДАЧИ ПРЕДМЕТОВ ===
+function giveItem($pdo, $userId, $itemId, $amount = 1) {
+ progressAchievement($pdo, $userId, 'item', $itemId, $amount);
+
+ $iStmt = $pdo->prepare("SELECT type FROM items WHERE id = ?");
+ $iStmt->execute([$itemId]);
+ $itemType = $iStmt->fetchColumn();
+ 
+ $isStackable = ($itemType === 'material'); 
+
+ if ($itemType === 'material') {
+     $typeCondition = "i.type = 'material'";
+ } elseif ($itemType === 'outfit' || $itemType === 'background') {
+     $typeCondition = "i.type IN ('outfit', 'background')";
+ } else {
+     $typeCondition = "i.type NOT IN ('material', 'outfit', 'background')";
+ }
+
+ $leftToAdd = $amount;
+ $wentToStorage = false;
+ 
+ while ($leftToAdd > 0) {
+     $stack = false;
+
+     if ($isStackable) {
+         $stackStmt = $pdo->prepare("SELECT id, quantity FROM inventory WHERE user_id = ? AND item_id = ? AND quantity < 32 AND is_equipped = 0 LIMIT 1 FOR UPDATE");
+         $stackStmt->execute([$userId, $itemId]);
+         $stack = $stackStmt->fetch();
+     }
+
+     if ($stack) {
+         $space = 32 - $stack['quantity'];
+         $add = min($leftToAdd, $space);
+         $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?")->execute([$add, $stack['id']]);
+         $leftToAdd -= $add;
+     } else {
+         $cStmt = $pdo->prepare("
+             SELECT count(inv.id) 
+             FROM inventory inv 
+             JOIN items i ON inv.item_id = i.id 
+             WHERE inv.user_id = ? AND inv.is_equipped = 0 AND $typeCondition
+         ");
+         $cStmt->execute([$userId]);
+         $invCount = (int)$cStmt->fetchColumn();
+
+         if ($invCount < 12) {
+             $add = $isStackable ? min($leftToAdd, 32) : 1;
+             $pdo->prepare("INSERT INTO inventory (user_id, item_id, quantity, is_equipped) VALUES (?, ?, ?, 0)")->execute([$userId, $itemId, $add]);
+             $leftToAdd -= $add;
+         } else {
+             $expires = time() + 86400; 
+             if ($isStackable) {
+                 $pdo->prepare("INSERT INTO storage (user_id, item_id, quantity, expires_at) VALUES (?, ?, ?, ?)")->execute([$userId, $itemId, $leftToAdd, $expires]);
+                 $leftToAdd = 0;
+             } else {
+                 for ($i = 0; $i < $leftToAdd; $i++) {
+                     $pdo->prepare("INSERT INTO storage (user_id, item_id, quantity, expires_at) VALUES (?, ?, 1, ?)")->execute([$userId, $itemId, $expires]);
+                 }
+                 $leftToAdd = 0;
+             }
+             $wentToStorage = true;
+         }
+     }
+ }
+ 
+ return $wentToStorage ? "Вкладка полна! В хранилище" : "";
+}
+
+// === 1. ПОЛУЧЕНИЕ СОСТОЯНИЯ ИГРЫ ===
+function getGameState($pdo, $userId, $inCombat) {
+ $time = time();
+ $pdo->prepare("UPDATE users SET last_active = ? WHERE id = ?")->execute([$time, $userId]);
+
+ $stmt = $pdo->prepare("
+     SELECT u.*, c.name as clan_name, up.level as pet_level, p.img as pet_img, w_i.img as wings_img
+     FROM users u 
+     LEFT JOIN clans c ON u.clan_id = c.id 
+     LEFT JOIN user_pets up ON up.user_id = u.id AND up.is_summoned = 1
+     LEFT JOIN pets p ON up.pet_id = p.id
+     LEFT JOIN equipment eq ON eq.user_id = u.id
+     LEFT JOIN inventory inv_w ON inv_w.id = eq.slot_wings
+     LEFT JOIN items w_i ON w_i.id = inv_w.item_id
+     WHERE u.id = ?
+ ");
+ $stmt->execute([$userId]);
+ $user = $stmt->fetch(PDO::FETCH_ASSOC);
+ 
+ if (!$inCombat && $user['hp'] < $user['max_hp'] && ($time - $user['last_regen'] >= 3)) {
+     $user['hp'] = min($user['max_hp'], $user['hp'] + 2);
+     $pdo->prepare("UPDATE users SET hp = ?, last_regen = ? WHERE id = ?")->execute([$user['hp'], $time, $userId]);
+ }
+
+ $locId = $user['location_id'] ?: 1;
+ 
+ // === ЛОГИКА МИРОВЫХ БОССОВ ===
+ $wbCheck = $pdo->prepare("SELECT id, name, death_time, respawn_time FROM world_bosses WHERE location_id = ?");
+ $wbCheck->execute([$locId]);
+ $allWb = $wbCheck->fetchAll(PDO::FETCH_ASSOC);
+ foreach ($allWb as $wb) {
+     if ($wb['death_time'] > 0 && ($time - $wb['death_time']) >= $wb['respawn_time']) {
+         $pdo->prepare("UPDATE world_bosses SET hp = max_hp, death_time = 0 WHERE id = ?")->execute([$wb['id']]);
+         
+         $locNameStmt = $pdo->prepare("SELECT name FROM locations WHERE id = ?");
+         $locNameStmt->execute([$locId]);
+         $lName = $locNameStmt->fetchColumn();
+         
+         $msg = "Система: Мировой Босс <span style='color:#ff5252; font-weight:bold;'>{$wb['name']}</span> появился на локации {$lName}!";
+         $pdo->prepare("INSERT INTO global_chat (user_id, channel, message, created_at) VALUES (0, 'general', ?, NOW())")->execute([$msg]);
+     }
+ }
+
+ // ДОБАВЛЕНО: offset_x, offset_y, font_size
+ $wBosses = $pdo->prepare("SELECT id, name, img, level, loc_x, loc_y, hp, max_hp, offset_x, offset_y, font_size FROM world_bosses WHERE location_id = ? AND death_time = 0");
+ $wBosses->execute([$locId]);
+
+ $pdo->prepare("UPDATE mobs SET hp = max_hp, death_time = 0 WHERE location_id = ? AND death_time > 0 AND death_time + respawn_time < ?")->execute([$locId, $time]);
+ 
+ // ДОБАВЛЕНО: offset_x, offset_y, font_size
+ $mobs = $pdo->prepare("SELECT id, name, img, loc_x, loc_y, hp, max_hp, attack_interval, IFNULL(level, 1) as level, offset_x, offset_y, font_size FROM mobs WHERE location_id = ? AND death_time = 0");
+ $mobs->execute([$locId]);
+
+ $othersStmt = $pdo->prepare("
+     SELECT u.id, u.username, u.class_type, u.active_outfit, u.loc_x, u.loc_y, u.level, 
+            c.name as clan_name, up.level as pet_level, p.img as pet_img, w_i.img as wings_img
+     FROM users u 
+     LEFT JOIN clans c ON u.clan_id = c.id 
+     LEFT JOIN user_pets up ON up.user_id = u.id AND up.is_summoned = 1
+     LEFT JOIN pets p ON up.pet_id = p.id
+     LEFT JOIN equipment eq ON eq.user_id = u.id
+     LEFT JOIN inventory inv_w ON inv_w.id = eq.slot_wings
+     LEFT JOIN items w_i ON w_i.id = inv_w.item_id
+     WHERE u.location_id = ? AND u.last_active > ? AND u.id != ?
+ ");
+ $othersStmt->execute([$locId, $time - 300, $userId]);
+ $othersRaw = $othersStmt->fetchAll(PDO::FETCH_ASSOC);
+ $othersList = [];
+ foreach ($othersRaw as $o) {
+     if ($o['pet_img']) {
+         $o['pet'] = ['img' => $o['pet_img'], 'level' => $o['pet_level']];
+     } else {
+         $o['pet'] = null;
+     }
+     $o['wings'] = $o['wings_img'] ?? null;
+     $othersList[] = $o;
+ }
+
+ $res = $pdo->prepare("SELECT id, name, type, img, loc_x, loc_y FROM world_resources WHERE location_id = ? AND (? - last_gathered) > respawn_time");
+ $res->execute([$locId, $time]);
+
+ // ДОБАВЛЕНО: offset_x, offset_y, font_size
+ $npcs = $pdo->prepare("SELECT id, name, img, loc_x, loc_y, type, offset_x, offset_y, font_size FROM npcs WHERE location_id = ?");
+ $npcs->execute([$locId]);
+ $npcsList = $npcs->fetchAll(PDO::FETCH_ASSOC);
+ 
+ foreach ($npcsList as &$npc) {
+     $npc['marker'] = null;
+     if ($npc['type'] == 'quest') {
+         $s1 = $pdo->prepare("SELECT count(*) FROM user_quests uq JOIN quests q ON uq.quest_id = q.id WHERE uq.user_id = ? AND q.npc_id = ? AND uq.status = 1"); 
+         $s1->execute([$userId, $npc['id']]);
+         if ($s1->fetchColumn() > 0) $npc['marker'] = 'green';
+         else {
+             $s2 = $pdo->prepare("SELECT count(*) FROM quests q WHERE q.npc_id = ? AND NOT EXISTS (SELECT 1 FROM user_quests uq WHERE uq.quest_id = q.id AND uq.user_id = ?)"); 
+             $s2->execute([$npc['id'], $userId]);
+             if ($s2->fetchColumn() > 0) $npc['marker'] = 'yellow';
+         }
+     }
+ }
+
+ $teles = $pdo->prepare("SELECT id, name, img, from_x, from_y FROM teleports WHERE from_loc_id = ?");
+ $teles->execute([$locId]);
+
+ // ДОБАВЛЕНО: offset_x, offset_y, font_size
+ $dungs = $pdo->prepare("SELECT id, name, img, loc_x, loc_y, offset_x, offset_y, font_size FROM dungeons WHERE location_id = ?");
+ $dungs->execute([$locId]);
+ $dungeonsList = $dungs->fetchAll(PDO::FETCH_ASSOC);
+
+ $notif = $pdo->prepare("SELECT count(*) FROM notifications WHERE user_id = ? AND is_read = 0"); $notif->execute([$userId]);
+ $pm = $pdo->prepare("SELECT count(*) FROM private_messages WHERE receiver_id = ? AND is_read = 0"); $pm->execute([$userId]);
+ 
+ $pdo->prepare("DELETE FROM storage WHERE expires_at < ?")->execute([$time]);
+ $stStmt = $pdo->prepare("SELECT count(*) FROM storage WHERE user_id = ?");
+ $stStmt->execute([$userId]);
+
+ $lastDaily = date('Y-m-d', $user['last_daily_claim'] ? $user['last_daily_claim'] : 0);
+ $dailyAvailable = ($lastDaily !== date('Y-m-d', $time));
+ $locData = $pdo->prepare("SELECT name, img FROM locations WHERE id = ?"); $locData->execute([$locId]);
+
+ return [
+     'status' => 'success',
+     'location' => $locData->fetch(),
+     'x' => (int)$user['loc_x'], 'y' => (int)$user['loc_y'],
+     'username' => $user['username'],
+     'class_type' => $user['class_type'], 
+     'outfit' => $user['active_outfit'] ?? null,
+     'clan_name' => $user['clan_name'],
+     'pet' => $user['pet_img'] ? ['img' => $user['pet_img'], 'level' => $user['pet_level']] : null,
+     'wings' => $user['wings_img'] ?? null,
+     'stats' => [
+         'id'=>$user['id'], 'lvl'=>(int)$user['level'], 
+         'exp'=>(int)$user['exp'], 'max_exp'=>(int)$user['next_level_exp'],
+         'hp'=>(int)$user['hp'], 'max_hp'=>(int)$user['max_hp'], 
+         'gold'=>(int)$user['gold']
+     ],
+     'mobs' => $mobs->fetchAll(),
+     'world_bosses' => $wBosses->fetchAll(PDO::FETCH_ASSOC),
+     'other_players' => $othersList,
+     'resources' => $res->fetchAll(),
+     'npcs' => $npcsList,
+     'teleports' => $teles->fetchAll(),
+     'dungeons' => $dungeonsList, 
+     'unread_count' => (int)$notif->fetchColumn(),
+     'pm_unread' => (int)$pm->fetchColumn(),
+     'storage_count' => (int)$stStmt->fetchColumn(),
+     'daily_available' => $dailyAvailable
+ ];
+}
+
+// === 2. АТАКА ИГРОКА ===
+function processPlayerAttack($pdo, $userId, $mobId) {
+ $u = $pdo->prepare("SELECT damage, exp, level, next_level_exp, gold, max_hp FROM users WHERE id = ?"); 
+ $u->execute([$userId]); $user = $u->fetch();
+ 
+ $m = $pdo->prepare("SELECT * FROM mobs WHERE id = ?"); 
+ $m->execute([$mobId]); $mob = $m->fetch();
+
+ if (!$mob || $mob['hp'] <= 0) return ['status' => 'error', 'message' => 'Моб мертв или далеко'];
+
+ $dmg = max(1, $user['damage'] - $mob['defense']);
+ $newMobHp = max(0, $mob['hp'] - $dmg);
+ $isDead = ($newMobHp <= 0);
+ $loot = null;
+
+ if ($isDead) {
+     $gold = rand($mob['gold_min'], $mob['gold_max']);
+     $exp = rand($mob['exp_min'], $mob['exp_max']);
+     $newExp = $user['exp'] + $exp;
+     $lvlMsg = "";
+     
+     progressAchievement($pdo, $userId, 'kill_mob', $mobId, 1);
+     progressAchievement($pdo, $userId, 'gold', 0, $gold);
+
+     if ($newExp >= $user['next_level_exp']) {
+         $user['level']++; 
+         $newExp = 0; 
+         $user['next_level_exp'] = (int)($user['next_level_exp'] * 1.5);
+         $lvlMsg = " LEVEL UP! +1 Очко Умений";
+         
+         $pdo->prepare("UPDATE users SET level=?, next_level_exp=?, skill_points = skill_points + 1 WHERE id=?")->execute([$user['level'], $user['next_level_exp'], $userId]);
+         recalcStats($pdo, $userId);
+         $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)")->execute([$userId, "Уровень повышен до " . $user['level'] . "! Получено 1 Очко Умений."]);
+     }
+     
+     $pdo->prepare("UPDATE users SET gold = gold + ?, exp = ? WHERE id = ?")->execute([$gold, $newExp, $userId]);
+     $pdo->prepare("UPDATE mobs SET hp = 0, death_time = ? WHERE id = ?")->execute([time(), $mobId]);
+     
+     $drops = $pdo->prepare("SELECT item_id, chance FROM mob_drops WHERE mob_id = ?"); 
+     $drops->execute([$mobId]);
+     $dropTxt = "";
+     
+     foreach($drops->fetchAll() as $d) {
+         if(rand(1,100) <= $d['chance']) {
+             $destMsg = giveItem($pdo, $userId, $d['item_id'], 1);
+             $iName = $pdo->prepare("SELECT name FROM items WHERE id = ?"); $iName->execute([$d['item_id']]);
+             $dropTxt .= "<br>+" . $iName->fetchColumn() . ($destMsg ? " ($destMsg)" : "");
+         }
+     }
+     
+     $questMsg = "";
+     $activeQ = $pdo->prepare("SELECT uq.id, uq.current_count, q.target_count, q.title FROM user_quests uq JOIN quests q ON uq.quest_id = q.id WHERE uq.user_id = ? AND uq.status = 0 AND q.target_mob_id = ?"); 
+     $activeQ->execute([$userId, $mobId]);
+     
+     foreach($activeQ->fetchAll() as $aq) {
+         $cnt = $aq['current_count'] + 1;
+         $st = 0;
+         if ($cnt >= $aq['target_count']) { 
+             $cnt = $aq['target_count']; 
+             $st = 1; 
+             $questMsg .= "<br>Квест готов: {$aq['title']}"; 
+         }
+         $pdo->prepare("UPDATE user_quests SET current_count = ?, status = ? WHERE id = ?")->execute([$cnt, $st, $aq['id']]);
+     }
+
+     $loot = ['gold'=>$gold, 'exp'=>$exp, 'msg'=>$lvlMsg . $dropTxt . $questMsg];
+ } else {
+     $pdo->prepare("UPDATE mobs SET hp = ? WHERE id = ?")->execute([$newMobHp, $mobId]);
+ }
+
+ return ['status'=>'success', 'dmg'=>$dmg, 'mob_hp'=>$newMobHp, 'mob_max_hp'=>$mob['max_hp'], 'dead'=>$isDead, 'loot'=>$loot];
+}
+
+// === 3. АТАКА МОБА ===
+function processMobAttack($pdo, $userId, $mobId) {
+ $u = $pdo->prepare("SELECT hp, max_hp, defense FROM users WHERE id = ?"); 
+ $u->execute([$userId]); $user = $u->fetch();
+ 
+ $m = $pdo->prepare("SELECT * FROM mobs WHERE id = ?"); 
+ $m->execute([$mobId]); $mob = $m->fetch();
+
+ if (!$mob || $mob['hp'] <= 0) return ['status' => 'error', 'message' => 'Моб мертв'];
+
+ $mobAtk = 5 + ($mob['level'] * 2);
+ $userDmgTaken = max(1, $mobAtk - $user['defense']);
+ $newUserHp = max(0, $user['hp'] - $userDmgTaken);
+ 
+ $pdo->prepare("UPDATE users SET hp = ? WHERE id = ?")->execute([$newUserHp, $userId]);
+
+ $userDead = ($newUserHp <= 0);
+ if ($userDead) {
+     $pdo->prepare("UPDATE users SET hp = max_hp, loc_x = 10, loc_y = 10 WHERE id = ?")->execute([$userId]);
+ }
+
+ return ['status' => 'success', 'dmg_taken' => $userDmgTaken, 'user_hp' => $newUserHp, 'user_dead' => $userDead];
+}
+
+// === 4. СБОР РЕСУРСОВ ===
+function tryGatherResource($pdo, $userId, $resId) {
+ $currentTime = time();
+ $pdo->beginTransaction();
+ try {
+     $stmt = $pdo->prepare("SELECT * FROM world_resources WHERE id = ? FOR UPDATE");
+     $stmt->execute([$resId]);
+     $res = $stmt->fetch();
+
+     if (!$res) throw new Exception("Ресурс исчез");
+     if (($currentTime - $res['last_gathered']) < $res['respawn_time']) throw new Exception("Ресурс истощен");
+
+     $uStmt = $pdo->prepare("SELECT loc_x, loc_y FROM users WHERE id = ?"); 
+     $uStmt->execute([$userId]); 
+     $uPos = $uStmt->fetch();
+     
+     $dist = max(abs($uPos['loc_x'] - $res['loc_x']), abs($uPos['loc_y'] - $res['loc_y']));
+     if ($dist > 1) throw new Exception("Слишком далеко! Подойдите ближе.");
+
+     $amount = rand($res['min_yield'], $res['max_yield']);
+     $itemId = $res['drop_item_id'];
+     
+     $destMsg = giveItem($pdo, $userId, $itemId, $amount);
+
+     $pdo->prepare("UPDATE world_resources SET last_gathered = ? WHERE id = ?")->execute([$currentTime, $resId]);
+     
+     $iName = $pdo->prepare("SELECT name FROM items WHERE id = ?"); 
+     $iName->execute([$itemId]);
+     $name = $iName->fetchColumn();
+
+     $pdo->commit();
+     return ['status' => 'success', 'message' => "Получено: $name x$amount " . ($destMsg ? "($destMsg)" : "")];
+ } catch (Exception $e) {
+     $pdo->rollBack();
+     return ['status' => 'error', 'message' => $e->getMessage()];
+ }
+}
+
+// === 5. ТЕЛЕПОРТАЦИЯ ===
+function tryTeleport($pdo, $userId, $tpId) {
+ $tpStmt = $pdo->prepare("SELECT * FROM teleports WHERE id = ?"); 
+ $tpStmt->execute([$tpId]); 
+ $tp = $tpStmt->fetch();
+ if ($tp) {
+     $pdo->prepare("UPDATE users SET location_id = ?, loc_x = ?, loc_y = ? WHERE id = ?")
+         ->execute([$tp['to_loc_id'], $tp['to_x'], $tp['to_y'], $userId]);
+     return ['status' => 'success'];
+ }
+ return ['status' => 'error'];
+}
+?>
